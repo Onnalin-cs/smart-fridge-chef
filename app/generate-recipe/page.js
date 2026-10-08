@@ -1,4 +1,3 @@
-
 'use client'
 export const dynamic = 'force-dynamic'
 
@@ -29,7 +28,7 @@ export default function GenerateRecipePage() {
 
     const ingredientList = items.map(i => `${i.name} (${i.quantity} ${i.unit})`).join(', ')
     const prompt = `มีวัตถุดิบในตู้เย็นดังนี้: ${ingredientList} 
-ช่วยคำนวณและสร้างเมนูอาหาร 1 เมนูที่ทำได้จริง โดยตอบกลับเป็น JSON Structure รูปแบบนี้เท่านั้น ห้ามใส่ข้อความอื่นนอกเหนือจาก JSON:
+ช่วยคิดเมนูอาหาร 1 เมนูที่ทำได้จริง ตอบกลับเป็น JSON เท่านั้น ห้ามมีข้อความอื่นนอกเหนือจาก JSON โครงสร้างตามนี้:
 {
   "recipe_name": "ชื่อเมนู",
   "ingredients_used": ["รายการวัตถุดิบที่ใช้ 1", "รายการวัตถุดิบที่ใช้ 2"],
@@ -38,6 +37,12 @@ export default function GenerateRecipePage() {
 
     try {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY
+      if (!apiKey) {
+        alert('ไม่พบ GEMINI API KEY กรุณาตรวจสอบการตั้งค่าใน Vercel')
+        setLoading(false)
+        return
+      }
+
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -47,12 +52,23 @@ export default function GenerateRecipePage() {
       })
 
       const data = await res.json()
+      
+      if (data.error) {
+        alert(`Gemini Error: ${data.error.message}`)
+        setLoading(false)
+        return
+      }
+
       const rawText = data.candidates[0].content.parts[0].text
-      const cleanJson = rawText.replace(/```json|```/g, '').trim()
-      const parsedRecipe = JSON.parse(cleanJson)
+      // ดึงเฉพาะก้อน JSON ออกมาจากข้อความ
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/)
+      if (!jsonMatch) throw new Error('Invalid JSON format')
+
+      const parsedRecipe = JSON.parse(jsonMatch[0])
       setRecipe(parsedRecipe)
     } catch (err) {
-      alert('เกิดข้อผิดพลาดในการประมวลผล AI โปรดลองใหม่อีกครั้ง')
+      console.error(err)
+      alert('เกิดข้อผิดพลาดในการประมวลผล AI โปรดเช็ค API Key หรือลองใหม่อีกครั้ง')
     } finally {
       setLoading(false)
     }
@@ -67,7 +83,7 @@ export default function GenerateRecipePage() {
     }])
 
     for (const ingName of recipe.ingredients_used) {
-      const target = items.find(i => ingName.includes(i.name))
+      const target = items.find(i => ingName.includes(i.name) || i.name.includes(ingName))
       if (target) {
         await supabase.from('fridge_items').delete().eq('id', target.id)
       }
