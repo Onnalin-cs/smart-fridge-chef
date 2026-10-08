@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
@@ -9,7 +8,7 @@ export default function GenerateRecipePage() {
   const [items, setItems] = useState([])
   const [recipe, setRecipe] = useState(null)
   const [loading, setLoading] = useState(false)
-  const router = useRouter()
+  const router = Router = useRouter()
 
   useEffect(() => {
     fetchItems()
