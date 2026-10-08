@@ -1,4 +1,6 @@
 'use client'
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import Link from 'next/link'
@@ -8,7 +10,7 @@ export default function GenerateRecipePage() {
   const [items, setItems] = useState([])
   const [recipe, setRecipe] = useState(null)
   const [loading, setLoading] = useState(false)
-  const router = Router = useRouter()
+  const router = useRouter()
 
   useEffect(() => {
     fetchItems()
@@ -57,14 +59,12 @@ export default function GenerateRecipePage() {
 
   async function cookRecipe() {
     if (!recipe) return
-    // บันทึกลงประวัติ
     await supabase.from('recipe_history').insert([{
       recipe_name: recipe.recipe_name,
       ingredients_used: recipe.ingredients_used,
       instructions: recipe.instructions
     }])
 
-    // ลบวัตถุดิบที่ใช้ออกจากตู้เย็น
     for (const ingName of recipe.ingredients_used) {
       const target = items.find(i => ingName.includes(i.name))
       if (target) {
