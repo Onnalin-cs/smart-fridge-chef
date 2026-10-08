@@ -1,3 +1,4 @@
+
 export const metadata = {
   title: 'Smart Fridge Chef',
   description: 'จัดการวัตถุดิบในตู้เย็น และรังสรรค์เมนูอาหารสุดพิเศษด้วย AI',
