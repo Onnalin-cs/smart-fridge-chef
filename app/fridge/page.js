@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabaseClient';
 
 export const revalidate = 0; // รับข้อมูลสดใหม่เสมอ
