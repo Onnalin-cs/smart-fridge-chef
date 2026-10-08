@@ -1,8 +1,4 @@
-const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY
-...
-const res = await fetch(`https://generativelanguage.googleapis.com/...
-แล้วใช้โค้ดนี้แทน ทั้งไฟล์ได้เลย:
-
+```
 'use client'
 
 export const dynamic = 'force-dynamic'
@@ -32,7 +28,8 @@ export default function GenerateRecipePage() {
 
   async function generateRecipe() {
     if (items.length === 0) {
-      return alert('โปรดเพิ่มวัตถุดิบในตู้เย็นก่อนครับ')
+      alert('โปรดเพิ่มวัตถุดิบในตู้เย็นก่อนครับ')
+      return
     }
 
     setLoading(true)
@@ -44,27 +41,22 @@ export default function GenerateRecipePage() {
 
     const prompt = `
 มีวัตถุดิบในตู้เย็นดังนี้:
-
 ${ingredientList}
 
-ช่วยคิดเมนูอาหาร 1 เมนูที่ทำได้จริงจากวัตถุดิบที่มี
+ช่วยคิดเมนูอาหาร 1 เมนูที่ทำได้จริง
 
-ตอบกลับเป็น JSON เท่านั้น
-ห้ามมี Markdown
-ห้ามมีข้อความอื่นนอกเหนือจาก JSON
-
-โครงสร้าง JSON ต้องเป็นแบบนี้:
+ตอบกลับเป็น JSON เท่านั้น ห้ามมีข้อความอื่น
+โครงสร้างต้องเป็น:
 
 {
   "recipe_name": "ชื่อเมนู",
   "ingredients_used": [
-    "รายการวัตถุดิบที่ใช้ 1",
-    "รายการวัตถุดิบที่ใช้ 2"
+    "วัตถุดิบที่ใช้"
   ],
   "instructions": [
-    "ขั้นตอนการทำ 1",
-    "ขั้นตอนการทำ 2",
-    "ขั้นตอนการทำ 3"
+    "ขั้นตอนที่ 1",
+    "ขั้นตอนที่ 2",
+    "ขั้นตอนที่ 3"
   ]
 }
 
@@ -72,46 +64,34 @@ ${ingredientList}
 `
 
     try {
-      // เรียก API ของเราเอง
-      // API Key จะไม่ถูกส่งไปยัง Browser
       const res = await fetch('/api/generate-recipe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          prompt
-        })
+        body: JSON.stringify({ prompt })
       })
 
       const data = await res.json()
 
       if (!res.ok || data.error) {
-        alert(`Gemini Error: ${data.error || 'เกิดข้อผิดพลาด'}`)
+        alert(data.error || 'เกิดข้อผิดพลาดจาก Gemini')
         return
       }
 
       const rawText = data.text
-
-      // ดึง JSON ออกมา
       const jsonMatch = rawText.match(/\{[\s\S]*\}/)
 
       if (!jsonMatch) {
-        console.error('Gemini response:', rawText)
         throw new Error('AI ไม่ได้ส่ง JSON กลับมา')
       }
 
       const parsedRecipe = JSON.parse(jsonMatch[0])
 
       setRecipe(parsedRecipe)
-
-    } catch (err) {
-      console.error(err)
-
-      alert(
-        'เกิดข้อผิดพลาดในการประมวลผล AI กรุณาลองใหม่อีกครั้ง'
-      )
-
+    } catch (error) {
+      console.error(error)
+      alert('เกิดข้อผิดพลาดในการสร้างเมนู กรุณาลองใหม่')
     } finally {
       setLoading(false)
     }
@@ -144,7 +124,6 @@ ${ingredientList}
     }
 
     alert('บันทึกการทำอาหารเรียบร้อยแล้ว!')
-
     router.push('/history')
   }
 
@@ -157,7 +136,6 @@ ${ingredientList}
         fontFamily: 'sans-serif'
       }}
     >
-
       <Link
         href="/fridge"
         style={{
@@ -180,9 +158,7 @@ ${ingredientList}
           marginBottom: '20px'
         }}
       >
-        <strong>
-          วัตถุดิบที่มีอยู่ตอนนี้:
-        </strong>
+        <strong>วัตถุดิบที่มีอยู่ตอนนี้:</strong>
 
         <div
           style={{
@@ -224,7 +200,7 @@ ${ingredientList}
         }}
       >
         {loading
-          ? '🤖 กำลังประมวลผลคำนวณเมนู...'
+          ? '🤖 กำลังประมวลผล...'
           : '🍳 ให้ AI คิดเมนูจากวัตถุดิบ'}
       </button>
 
@@ -238,40 +214,27 @@ ${ingredientList}
             background: '#ECFDF5'
           }}
         >
+          <h2>🍲 {recipe.recipe_name}</h2>
 
-          <h2>
-            🍲 {recipe.recipe_name}
-          </h2>
-
-          <h3>
-            วัตถุดิบที่ใช้:
-          </h3>
+          <h3>วัตถุดิบที่ใช้:</h3>
 
           <ul>
-            {recipe.ingredients_used.map(
-              (ing, idx) => (
-                <li key={idx}>
-                  {ing}
-                </li>
-              )
-            )}
+            {recipe.ingredients_used.map((ing, idx) => (
+              <li key={idx}>{ing}</li>
+            ))}
           </ul>
 
-          <h3>
-            ขั้นตอนการทำ:
-          </h3>
+          <h3>ขั้นตอนการทำ:</h3>
 
           <ol>
-            {recipe.instructions.map(
-              (step, idx) => (
-                <li
-                  key={idx}
-                  style={{ marginBottom: '5px' }}
-                >
-                  {step}
-                </li>
-              )
-            )}
+            {recipe.instructions.map((step, idx) => (
+              <li
+                key={idx}
+                style={{ marginBottom: '5px' }}
+              >
+                {step}
+              </li>
+            ))}
           </ol>
 
           <button
@@ -290,10 +253,86 @@ ${ingredientList}
           >
             ✅ ลงมือทำเมนูนี้ (เคลียร์วัตถุดิบออกจากตู้)
           </button>
-
         </div>
       )}
-
     </div>
   )
 }
+```
+
+```
+import { NextResponse } from 'next/server'
+
+export async function POST(request) {
+  try {
+    const { prompt } = await request.json()
+
+    const apiKey = process.env.GEMINI_API_KEY
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'ไม่พบ GEMINI_API_KEY ใน Vercel' },
+        { status: 500 }
+      )
+    }
+
+    const response = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: prompt
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json'
+          }
+        })
+      }
+    )
+
+    const data = await response.json()
+
+    if (!response.ok || data.error) {
+      return NextResponse.json(
+        {
+          error: data.error?.message || 'Gemini API Error'
+        },
+        { status: response.status || 500 }
+      )
+    }
+
+    const text =
+      data.candidates?.[0]?.content?.parts?.[0]?.text
+
+    if (!text) {
+      return NextResponse.json(
+        { error: 'Gemini ไม่ส่งผลลัพธ์กลับมา' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({ text })
+
+  } catch (error) {
+    console.error(error)
+
+    return NextResponse.json(
+      {
+        error: error.message || 'เกิดข้อผิดพลาด'
+      },
+      { status: 500 }
+    )
+  }
+}
+```
