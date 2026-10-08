@@ -1,4 +1,3 @@
-
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabaseClient'
@@ -46,7 +45,6 @@ export default function FridgePage() {
         </Link>
       </header>
 
-      {/* ฟอร์มเพิ่มวัตถุดิบ */}
       <form onSubmit={addItem} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '30px', background: '#F3F4F6', padding: '15px', borderRadius: '8px' }}>
         <input placeholder="ชื่อวัตถุดิบ เช่น หมูสับ" value={name} onChange={e => setName(e.target.value)} style={{ padding: '8px' }} required />
         <select value={category} onChange={e => setCategory(e.target.value)} style={{ padding: '8px' }}>
@@ -63,7 +61,6 @@ export default function FridgePage() {
         </button>
       </form>
 
-      {/* รายการวัตถุดิบ */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '15px' }}>
         {items.map(item => (
           <div key={item.id} style={{ border: '1px solid #E5E7EB', padding: '15px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
