@@ -1,3 +1,4 @@
+
 ```
 'use client'
 
@@ -19,9 +20,14 @@ export default function GenerateRecipePage() {
   }, [])
 
   async function fetchItems() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('fridge_items')
       .select('*')
+
+    if (error) {
+      console.error(error)
+      return
+    }
 
     setItems(data || [])
   }
@@ -45,13 +51,17 @@ ${ingredientList}
 
 ช่วยคิดเมนูอาหาร 1 เมนูที่ทำได้จริง
 
-ตอบกลับเป็น JSON เท่านั้น ห้ามมีข้อความอื่น
-โครงสร้างต้องเป็น:
+ตอบกลับเป็น JSON เท่านั้น
+ห้ามใส่ Markdown
+ห้ามใส่ข้อความอื่นนอก JSON
+
+รูปแบบ JSON:
 
 {
   "recipe_name": "ชื่อเมนู",
   "ingredients_used": [
-    "วัตถุดิบที่ใช้"
+    "วัตถุดิบที่ใช้ 1",
+    "วัตถุดิบที่ใช้ 2"
   ],
   "instructions": [
     "ขั้นตอนที่ 1",
@@ -59,12 +69,10 @@ ${ingredientList}
     "ขั้นตอนที่ 3"
   ]
 }
-
-พยายามใช้วัตถุดิบที่มีอยู่ให้มากที่สุด
 `
 
     try {
-      const res = await fetch('/api/generate-recipe', {
+      const response = await fetch('/api/generate-recipe', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -72,14 +80,14 @@ ${ingredientList}
         body: JSON.stringify({ prompt })
       })
 
-      const data = await res.json()
+      const data = await response.json()
 
-      if (!res.ok || data.error) {
-        alert(data.error || 'เกิดข้อผิดพลาดจาก Gemini')
-        return
+      if (!response.ok) {
+        throw new Error(data.error || 'เกิดข้อผิดพลาดจาก API')
       }
 
       const rawText = data.text
+
       const jsonMatch = rawText.match(/\{[\s\S]*\}/)
 
       if (!jsonMatch) {
@@ -89,9 +97,10 @@ ${ingredientList}
       const parsedRecipe = JSON.parse(jsonMatch[0])
 
       setRecipe(parsedRecipe)
+
     } catch (error) {
       console.error(error)
-      alert('เกิดข้อผิดพลาดในการสร้างเมนู กรุณาลองใหม่')
+      alert(error.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่')
     } finally {
       setLoading(false)
     }
@@ -100,13 +109,19 @@ ${ingredientList}
   async function cookRecipe() {
     if (!recipe) return
 
-    await supabase
+    const { error } = await supabase
       .from('recipe_history')
       .insert([{
         recipe_name: recipe.recipe_name,
         ingredients_used: recipe.ingredients_used,
         instructions: recipe.instructions
       }])
+
+    if (error) {
+      console.error(error)
+      alert('ไม่สามารถบันทึกประวัติได้')
+      return
+    }
 
     for (const ingName of recipe.ingredients_used) {
       const target = items.find(
@@ -168,9 +183,9 @@ ${ingredientList}
             marginTop: '10px'
           }}
         >
-          {items.map(i => (
+          {items.map(item => (
             <span
-              key={i.id}
+              key={item.id}
               style={{
                 background: '#E5E7EB',
                 padding: '4px 8px',
@@ -178,7 +193,7 @@ ${ingredientList}
                 fontSize: '0.9em'
               }}
             >
-              {i.name}
+              {item.name}
             </span>
           ))}
         </div>
@@ -219,17 +234,19 @@ ${ingredientList}
           <h3>วัตถุดิบที่ใช้:</h3>
 
           <ul>
-            {recipe.ingredients_used.map((ing, idx) => (
-              <li key={idx}>{ing}</li>
+            {recipe.ingredients_used.map((ingredient, index) => (
+              <li key={index}>
+                {ingredient}
+              </li>
             ))}
           </ul>
 
           <h3>ขั้นตอนการทำ:</h3>
 
           <ol>
-            {recipe.instructions.map((step, idx) => (
+            {recipe.instructions.map((step, index) => (
               <li
-                key={idx}
+                key={index}
                 style={{ marginBottom: '5px' }}
               >
                 {step}
@@ -251,7 +268,7 @@ ${ingredientList}
               cursor: 'pointer'
             }}
           >
-            ✅ ลงมือทำเมนูนี้ (เคลียร์วัตถุดิบออกจากตู้)
+            ✅ ลงมือทำเมนูนี้
           </button>
         </div>
       )}
@@ -259,6 +276,8 @@ ${ingredientList}
   )
 }
 ```
+
+และสร้าง/แก้ไฟล์ **`app/api/generate-recipe/route.js`** เป็นอันนี้:
 
 ```
 import { NextResponse } from 'next/server'
